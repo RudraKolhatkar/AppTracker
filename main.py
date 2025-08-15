@@ -1,12 +1,13 @@
 import sys
 import subprocess
+import threading
 from typing import List
 from enum import Enum
 
-from PySide6.QtGui import QBrush, QColor, QPen
+from PySide6.QtGui import QBrush, QColor, QPen, QAction, QIcon
 from PySide6.QtCore import Qt
 from PySide6.QtCharts import QChart, QChartView, QBarSet, QStackedBarSeries, QBarCategoryAxis, QValueAxis, QBarSeries
-from PySide6.QtWidgets import QApplication, QMainWindow, QSplitter, QStackedWidget, QWidget, QHeaderView, QDialog, QListWidgetItem
+from PySide6.QtWidgets import QApplication, QMainWindow, QSplitter, QStackedWidget, QWidget, QHeaderView, QDialog, QListWidgetItem, QMessageBox, QSystemTrayIcon, QMenu
 import Dashboard
 import AppDialog
 import Database
@@ -49,7 +50,8 @@ class AddAppDialogWidget(QDialog):
     def addApplicationList(self, item: QListWidgetItem):
         text = item.text().split()
         #Only two results are returned, we ignore the PID and use pass the name of the application
-        db.add(text[1])
+        if db.add(text[1]) == 1:
+            alert = QMessageBox.information(self, "Item Exists", "The item you have selected is already in the Database")
 
     def addApplicationButt(self):
         item = self.ui.foundAppsList.selectedItems()
@@ -271,6 +273,18 @@ class AppDialogWidget(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
+
+    icon = QIcon("icon.png")
+    tray = QSystemTrayIcon(icon)
+    tray.setVisible(True)
+
+    menu = QMenu()
+    quitAction = QAction("Quit")
+    quitAction.triggered.connect(app.quit)
+    menu.addAction(quitAction)
+    tray.setContextMenu(menu)
+
     db = Database.DB()
 
     win = QStackedWidget()

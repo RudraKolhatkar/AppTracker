@@ -25,7 +25,8 @@ class Ui_Dialog(object):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")
         Dialog.resize(632, 447)
-        Dialog.setStyleSheet(u"background-color: rgb(61, 64, 69);")
+        Dialog.setStyleSheet(u"background-color: rgb(61, 64, 69);\n"
+"color:white;")
         self.verticalLayout = QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.searchLineEdit = QLineEdit(Dialog)
