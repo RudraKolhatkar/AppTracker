@@ -1,3 +1,4 @@
+import datetime
 import subprocess
 import pandas as pd
 import cryptography as cryp
@@ -6,7 +7,7 @@ import datetime as dt
 
 class AppInfo:
     def __init__(self, frame: pd.DataFrame):
-        self.totalUptime = 0
+        self.totalUptime = datetime.time.min
         self.frame = frame
 
 class DB:
@@ -15,6 +16,7 @@ class DB:
 
     def add(self, name: str) -> int:
         #Add checks to ensure name does not include a command injection
+        #Also add a persistent storage method for these dataframes
         if name not in self.appDict:
             df = pd.DataFrame(columns=["Date", "Uptime"])
             df.loc[len(df)] = [dt.date.today(), dt.time.min]

@@ -1,6 +1,8 @@
+import datetime
 import sys
 import subprocess
 import threading
+import time
 from typing import List
 from enum import Enum
 
@@ -12,17 +14,21 @@ import Dashboard
 import AppDialog
 import Database
 import AddAppDialog
+from Database import AppInfo
 
+mutex = threading.Lock()
 
 class AppData:
     def __init__(self, appName: str, data: list):
         self.appName = appName
         self.data = data
 
+
 class chartType(Enum):
     WEEK = "Week"
     MONTH = "Month"
     YEAR = "Year"
+
 
 class AddAppDialogWidget(QDialog):
     def __init__(self):
@@ -56,7 +62,9 @@ class AddAppDialogWidget(QDialog):
     def addApplicationButt(self):
         item = self.ui.foundAppsList.selectedItems()
         text = item[0].text().split()
-        db.add(text[1])
+        if db.add(text[1]) == 1:
+            alert = QMessageBox.information(self, "Item Exists", "The item you have selected is already in the Database")
+
 
 class DashboardWidget(QWidget):
     def __init__(self):
@@ -271,6 +279,32 @@ class AppDialogWidget(QWidget):
         win.setCurrentWidget(dashboard)
 
 
+def daemonThread(data: dict[str, AppInfo]):
+    while True:
+        for value in data.values():
+            with mutex:
+                value.totalUptime = addSecs(value.totalUptime, 1)
+
+                #Get all indices that have the date of today
+                indices = value.frame.index[value.frame["Date"] == datetime.date.today()].tolist()
+                if indices:
+                    row = value.frame.loc[indices[-1]]
+                    newTime = addSecs(row["Uptime"], 1)
+                    value.frame.loc[indices[-1], "Uptime"] = newTime
+                else:
+                    value.frame.loc[len(value.frame)] = [datetime.date.today(), datetime.time.min]
+
+            print(value.frame)
+
+
+        time.sleep(1)
+
+def addSecs(tm: datetime.time, secs):
+    fulldate = datetime.datetime(100, 1, 1, tm.hour, tm.minute, tm.second)
+    fulldate = fulldate + datetime.timedelta(seconds=secs)
+    return fulldate.time()
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
@@ -286,6 +320,9 @@ if __name__ == "__main__":
     tray.setContextMenu(menu)
 
     db = Database.DB()
+    daemon = threading.Thread(target=daemonThread, name='daemon', args=(db.appDict, ))
+    daemon.daemon = True
+    daemon.start()
 
     win = QStackedWidget()
     dashboard = DashboardWidget()
