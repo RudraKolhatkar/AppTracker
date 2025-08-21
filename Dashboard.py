@@ -24,7 +24,8 @@ class Ui_Form(object):
         if not Form.objectName():
             Form.setObjectName(u"Form")
         Form.resize(855, 591)
-        Form.setStyleSheet(u"background-color: rgb(47, 46, 52);")
+        Form.setStyleSheet(u"background-color: rgb(47, 46, 52);\n"
+"color:white;")
         self.verticalLayout = QVBoxLayout(Form)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.TimeFrame = QFrame(Form)
@@ -121,16 +122,6 @@ class Ui_Form(object):
         self.tableWidget.setHorizontalHeaderItem(0, __qtablewidgetitem)
         __qtablewidgetitem1 = QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(1, __qtablewidgetitem1)
-        if (self.tableWidget.rowCount() < 3):
-            self.tableWidget.setRowCount(3)
-        __qtablewidgetitem2 = QTableWidgetItem()
-        self.tableWidget.setVerticalHeaderItem(0, __qtablewidgetitem2)
-        __qtablewidgetitem3 = QTableWidgetItem()
-        self.tableWidget.setVerticalHeaderItem(1, __qtablewidgetitem3)
-        __qtablewidgetitem4 = QTableWidgetItem()
-        self.tableWidget.setVerticalHeaderItem(2, __qtablewidgetitem4)
-        __qtablewidgetitem5 = QTableWidgetItem()
-        self.tableWidget.setItem(0, 0, __qtablewidgetitem5)
         self.tableWidget.setObjectName(u"tableWidget")
         sizePolicy3.setHeightForWidth(self.tableWidget.sizePolicy().hasHeightForWidth())
         self.tableWidget.setSizePolicy(sizePolicy3)
@@ -138,7 +129,7 @@ class Ui_Form(object):
 "        color: white;\n"
 "    }")
         self.tableWidget.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.tableWidget.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        self.tableWidget.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableWidget.setShowGrid(False)
         self.tableWidget.horizontalHeader().setVisible(True)
@@ -162,10 +153,5 @@ class Ui_Form(object):
         ___qtablewidgetitem.setText(QCoreApplication.translate("Form", u"Application", None));
         ___qtablewidgetitem1 = self.tableWidget.horizontalHeaderItem(1)
         ___qtablewidgetitem1.setText(QCoreApplication.translate("Form", u"Uptime", None));
-
-        __sortingEnabled = self.tableWidget.isSortingEnabled()
-        self.tableWidget.setSortingEnabled(False)
-        self.tableWidget.setSortingEnabled(__sortingEnabled)
-
     # retranslateUi
 

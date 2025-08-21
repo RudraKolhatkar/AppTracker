@@ -1,5 +1,4 @@
 import datetime
-import subprocess
 import pandas as pd
 import cryptography as cryp
 import pickle

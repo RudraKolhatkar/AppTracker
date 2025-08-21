@@ -3,13 +3,15 @@ import sys
 import subprocess
 import threading
 import time
+import pickle
 from typing import List
 from enum import Enum
 
 from PySide6.QtGui import QBrush, QColor, QPen, QAction, QIcon
 from PySide6.QtCore import Qt
 from PySide6.QtCharts import QChart, QChartView, QBarSet, QStackedBarSeries, QBarCategoryAxis, QValueAxis, QBarSeries
-from PySide6.QtWidgets import QApplication, QMainWindow, QSplitter, QStackedWidget, QWidget, QHeaderView, QDialog, QListWidgetItem, QMessageBox, QSystemTrayIcon, QMenu
+from PySide6.QtWidgets import QApplication, QMainWindow, QSplitter, QStackedWidget, QWidget, QHeaderView, QDialog, \
+    QListWidgetItem, QMessageBox, QSystemTrayIcon, QMenu, QTableWidgetItem
 import Dashboard
 import AppDialog
 import Database
@@ -17,6 +19,7 @@ import AddAppDialog
 from Database import AppInfo
 
 mutex = threading.Lock()
+
 
 class AppData:
     def __init__(self, appName: str, data: list):
@@ -44,7 +47,8 @@ class AddAppDialogWidget(QDialog):
         self.ui.foundAppsList.clear()
         try:
             #Implement the command injection checker here
-            terminalOutput = subprocess.check_output(f'pgrep -l {text}', shell=True, stderr=subprocess.STDOUT).decode('utf-8')
+            terminalOutput = subprocess.check_output(f'pgrep -l {text}', shell=True, stderr=subprocess.STDOUT).decode(
+                'utf-8')
         except:
             return
 
@@ -55,15 +59,17 @@ class AddAppDialogWidget(QDialog):
 
     def addApplicationList(self, item: QListWidgetItem):
         text = item.text().split()
-        #Only two results are returned, we ignore the PID and use pass the name of the application
+        #Only two results are returned, we ignore the PID and pass the name of the application
         if db.add(text[1]) == 1:
-            alert = QMessageBox.information(self, "Item Exists", "The item you have selected is already in the Database")
+            alert = QMessageBox.information(self, "Item Exists",
+                                            "The item you have selected is already in the Database")
 
     def addApplicationButt(self):
         item = self.ui.foundAppsList.selectedItems()
         text = item[0].text().split()
         if db.add(text[1]) == 1:
-            alert = QMessageBox.information(self, "Item Exists", "The item you have selected is already in the Database")
+            alert = QMessageBox.information(self, "Item Exists",
+                                            "The item you have selected is already in the Database")
 
 
 class DashboardWidget(QWidget):
@@ -143,14 +149,17 @@ class DashboardWidget(QWidget):
         # chartSwitcher.addWidget(weekChartView)
         # self.ui.verticalLayout_2.addWidget(chartSwitcher)
 
-
-
         #Modifications to the table
-        self.ui.tableWidget.setColumnWidth(0, 1200)
-        header = self.ui.tableWidget.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.ui.tableWidget.setColumnWidth(0, 1250)
+        rowcount = 0
+        for name in db.appDict.keys():
+            self.ui.tableWidget.insertRow(rowcount)
 
+            self.ui.tableWidget.setItem(rowcount, 0, QTableWidgetItem(name))
+            uptime = db.appDict[name].totalUptime.strftime("%H:%M:%S")
+            self.ui.tableWidget.setItem(rowcount, 1, QTableWidgetItem(uptime))
+
+            rowcount += 1
 
     def popupAddAppDialog(self):
         diag = AddAppDialogWidget()
@@ -279,9 +288,9 @@ class AppDialogWidget(QWidget):
         win.setCurrentWidget(dashboard)
 
 
-def daemonThread(data: dict[str, AppInfo]):
+def daemonThread(DB: Database.DB):
     while True:
-        for value in data.values():
+        for value in DB.appDict.values():
             with mutex:
                 value.totalUptime = addSecs(value.totalUptime, 1)
 
@@ -296,10 +305,14 @@ def daemonThread(data: dict[str, AppInfo]):
 
             print(value.frame)
 
+        file = open("DB pickle", "wb")
+        pickle.dump(DB, file)
+        file.close()
 
         time.sleep(1)
 
-def addSecs(tm: datetime.time, secs):
+
+def addSecs(tm: datetime.time, secs) -> datetime.time:
     fulldate = datetime.datetime(100, 1, 1, tm.hour, tm.minute, tm.second)
     fulldate = fulldate + datetime.timedelta(seconds=secs)
     return fulldate.time()
@@ -319,8 +332,14 @@ if __name__ == "__main__":
     menu.addAction(quitAction)
     tray.setContextMenu(menu)
 
-    db = Database.DB()
-    daemon = threading.Thread(target=daemonThread, name='daemon', args=(db.appDict, ))
+    try:
+        dbFile = open("DB pickle", "rb")
+        db = pickle.load(dbFile)
+        dbFile.close()
+    except FileNotFoundError:
+        db = Database.DB()
+
+    daemon = threading.Thread(target=daemonThread, name='daemon', args=(db,))
     daemon.daemon = True
     daemon.start()
 

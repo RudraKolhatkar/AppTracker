@@ -14,7 +14,8 @@
    <string>Form</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgb(47, 46, 52);</string>
+   <string notr="true">background-color: rgb(47, 46, 52);
+color:white;</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -219,7 +220,7 @@
       <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
      </property>
      <property name="selectionMode">
-      <enum>QAbstractItemView::SelectionMode::NoSelection</enum>
+      <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
      </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
@@ -233,21 +234,6 @@
      <attribute name="verticalHeaderVisible">
       <bool>false</bool>
      </attribute>
-     <row>
-      <property name="text">
-       <string/>
-      </property>
-     </row>
-     <row>
-      <property name="text">
-       <string/>
-      </property>
-     </row>
-     <row>
-      <property name="text">
-       <string/>
-      </property>
-     </row>
      <column>
       <property name="text">
        <string>Application</string>
@@ -258,11 +244,6 @@
        <string>Uptime</string>
       </property>
      </column>
-     <item row="0" column="0">
-      <property name="text">
-       <string/>
-      </property>
-     </item>
     </widget>
    </item>
   </layout>
