@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import sys
 import subprocess
 import threading
@@ -27,7 +27,7 @@ class AppData:
         self.data = data
 
 
-class chartType(Enum):
+class chartRange(Enum):
     WEEK = "Week"
     MONTH = "Month"
     YEAR = "Year"
@@ -143,11 +143,11 @@ class DashboardWidget(QWidget):
         # axisX.setRange(0, 50)
         # chart.addAxis(axisX, Qt.AlignmentFlag.AlignLeft)
         # series.attachAxis(axisX)
-        #
-        # weekChartView = QChartView(chart)
-        # chartSwitcher = QStackedWidget()
-        # chartSwitcher.addWidget(weekChartView)
-        # self.ui.verticalLayout_2.addWidget(chartSwitcher)
+
+        weekChartView = self.createChart(chartType=chartRange.WEEK)
+        chartSwitcher = QStackedWidget()
+        chartSwitcher.addWidget(weekChartView)
+        self.ui.verticalLayout_2.addWidget(chartSwitcher)
 
         #Modifications to the table
         self.ui.tableWidget.setColumnWidth(0, 1250)
@@ -156,7 +156,7 @@ class DashboardWidget(QWidget):
             self.ui.tableWidget.insertRow(rowcount)
 
             self.ui.tableWidget.setItem(rowcount, 0, QTableWidgetItem(name))
-            uptime = db.appDict[name].totalUptime.strftime("%H:%M:%S")
+            uptime = db.appDict[name].totalUptime.strftime("%Hh %Mm %Ss")
             self.ui.tableWidget.setItem(rowcount, 1, QTableWidgetItem(uptime))
 
             rowcount += 1
@@ -165,8 +165,45 @@ class DashboardWidget(QWidget):
         diag = AddAppDialogWidget()
         diag.exec()
 
-    def createChart(self, appData: List[AppData], categories: List[str], type: chartType) -> QChartView:
+    def createChart(self, chartType: chartRange) -> QChartView:
         barsets: List[QBarSet] = []
+
+        # if type == chartRange.WEEK:
+        startDate = dt.date.today()
+        while (startDate.strftime("%A") != "Sunday"):
+            startDate = startDate + dt.timedelta(days=-1)
+
+        endDate = startDate + dt.timedelta(days=6)
+        currentDate = startDate
+        categories = []
+        requiredDates = []
+        while currentDate != endDate:
+            categories.append(currentDate.strftime("%A"))
+            requiredDates.append(currentDate)
+            currentDate = currentDate + dt.timedelta(days=1)
+
+
+        appData = []
+        range = 0
+        for name in db.appDict.keys():
+            frame = db.appDict[name].frame
+
+            uptimes = []
+            for date in requiredDates:
+                indices = frame.index[frame["Date"] == date].tolist()
+                if indices:
+                    currUptime = frame.loc[indices[-1], "Uptime"]
+                    seconds = dt.timedelta(hours=currUptime.hour, minutes=currUptime.minute, seconds=currUptime.second).total_seconds()
+
+                    if seconds > range:
+                        range = seconds
+
+                    uptimes.append(seconds)
+                else:
+                    uptimes.append(0)
+
+            appData.append(AppData(name, uptimes))
+
 
         for app in appData:
             barsets.append(QBarSet(app.appName))
@@ -181,7 +218,7 @@ class DashboardWidget(QWidget):
 
         chart = QChart()
         chart.addSeries(series)
-        chart.setTitle(type.value)
+        chart.setTitle(chartType.value)
         chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
         chart.setBackgroundBrush(QBrush(QColor("#2F2E34")))
         chart.setBackgroundVisible(True)
@@ -198,7 +235,7 @@ class DashboardWidget(QWidget):
         axisX = QValueAxis()
         axisX.setLabelsBrush(QBrush(QColor("white")))
         axisX.setGridLineVisible(False)
-        axisX.setRange(0, 50)
+        # axisX.setRange(0, range + 50)
         chart.addAxis(axisX, Qt.AlignmentFlag.AlignLeft)
         series.attachAxis(axisX)
 
@@ -290,20 +327,31 @@ class AppDialogWidget(QWidget):
 
 def daemonThread(DB: Database.DB):
     while True:
-        for value in DB.appDict.values():
-            with mutex:
-                value.totalUptime = addSecs(value.totalUptime, 1)
+        for name in DB.appDict.keys():
+            found = True
+            try:
+                terminalOutput = subprocess.check_output(f'pgrep -l {name}', shell=True, stderr=subprocess.STDOUT).decode(
+                    'utf-8')
+            except:
+                found = False
 
-                #Get all indices that have the date of today
-                indices = value.frame.index[value.frame["Date"] == datetime.date.today()].tolist()
-                if indices:
-                    row = value.frame.loc[indices[-1]]
-                    newTime = addSecs(row["Uptime"], 1)
-                    value.frame.loc[indices[-1], "Uptime"] = newTime
-                else:
-                    value.frame.loc[len(value.frame)] = [datetime.date.today(), datetime.time.min]
+            if found == True:
+                value = DB.appDict[name]
 
-            print(value.frame)
+                with mutex:
+                    value.totalUptime = addSecs(value.totalUptime, 1)
+
+                    #Get all indices that have the date of today
+                    indices = value.frame.index[value.frame["Date"] == dt.date.today()].tolist()
+                    if indices:
+                        row = value.frame.loc[indices[-1]]
+                        newTime = addSecs(row["Uptime"], 1)
+                        value.frame.loc[indices[-1], "Uptime"] = newTime
+                    else:
+                        value.frame.loc[len(value.frame)] = [dt.date.today(), dt.time.min]
+
+                print(name)
+                print(value.frame)
 
         file = open("DB pickle", "wb")
         pickle.dump(DB, file)
@@ -312,9 +360,9 @@ def daemonThread(DB: Database.DB):
         time.sleep(1)
 
 
-def addSecs(tm: datetime.time, secs) -> datetime.time:
-    fulldate = datetime.datetime(100, 1, 1, tm.hour, tm.minute, tm.second)
-    fulldate = fulldate + datetime.timedelta(seconds=secs)
+def addSecs(tm: dt.time, secs) -> dt.time:
+    fulldate = dt.dt(100, 1, 1, tm.hour, tm.minute, tm.second)
+    fulldate = fulldate + dt.timedelta(seconds=secs)
     return fulldate.time()
 
 
