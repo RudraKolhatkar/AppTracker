@@ -12,6 +12,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtCharts import QChart, QChartView, QBarSet, QStackedBarSeries, QBarCategoryAxis, QValueAxis, QBarSeries
 from PySide6.QtWidgets import QApplication, QMainWindow, QSplitter, QStackedWidget, QWidget, QHeaderView, QDialog, \
     QListWidgetItem, QMessageBox, QSystemTrayIcon, QMenu, QTableWidgetItem
+from pandas.io.formats.info import series_see_also_sub
+
 import Dashboard
 import AppDialog
 import Database
@@ -254,8 +256,15 @@ class DashboardWidget(QWidget):
         return QChartView(chart)
 
     def barsetClicked(self, index, barset: QBarSet):
+        global appDialog
+
+        if win.indexOf(appDialog) != -1:
+            win.removeWidget(appDialog)
+
+        appDialog = AppDialogWidget(barset.label())
+        win.addWidget(appDialog)
         win.setCurrentWidget(appDialog)
-        print(barset.label())
+
 
     def barsetOnHover(self, status: bool, index: int, barset: QBarSet):
         if status:
@@ -270,40 +279,177 @@ class DashboardWidget(QWidget):
 
 
 class AppDialogWidget(QWidget):
-    def __init__(self):
+    def __init__(self, appName):
         super().__init__()
-        self.ui = AppDialog.Ui_Form()
-        self.ui.setupUi(self)
+        if appName is not None:
+            self.ui = AppDialog.Ui_Form()
+            self.ui.setupUi(self)
 
-        #Adds a splitter
-        self.ui.verticalLayout.removeWidget(self.ui.frame)
-        self.ui.verticalLayout.removeWidget(self.ui.tableWidget)
+            #Adds a splitter
+            self.ui.verticalLayout.removeWidget(self.ui.frame)
+            self.ui.verticalLayout.removeWidget(self.ui.tableWidget)
 
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        splitter.addWidget(self.ui.frame)
-        splitter.addWidget(self.ui.tableWidget)
-        splitter.setStretchFactor(0, 8)
-        splitter.setStretchFactor(1, 1)
+            splitter = QSplitter(Qt.Orientation.Vertical)
+            splitter.addWidget(self.ui.frame)
+            splitter.addWidget(self.ui.tableWidget)
+            splitter.setStretchFactor(0, 8)
+            splitter.setStretchFactor(1, 1)
 
-        self.ui.verticalLayout.addWidget(splitter)
+            self.ui.verticalLayout.addWidget(splitter)
 
-        #Create and Modify the BarChart
-        #This will be the name of the Application and the data of each day in the week
-        set0 = QBarSet("Label 1")
-        set0 << 1 << 2 << 3 << 4 << 5 << 6 << 7
+            # #Create and Modify the BarChart
+            # #This will be the name of the Application and the data of each day in the week
+            # set0 = QBarSet("Label 1")
+            # set0 << 1 << 2 << 3 << 4 << 5 << 6 << 7
+            #
+            # series = QBarSeries()
+            # series.append(set0)
+            #
+            # chart = QChart()
+            # chart.addSeries(series)
+            # chart.setTitle("Application History")
+            # chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
+            # chart.setBackgroundBrush(QBrush(QColor("#2F2E34")))
+            # chart.legend().setLabelBrush(QBrush(QColor("white")))
+            # chart.setTitleBrush(QBrush(QColor("white")))
+            #
+            # categories = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh"]
+            # axisX = QBarCategoryAxis()
+            # axisX.append(categories)
+            # axisX.setGridLineVisible(False)
+            # axisX.setLabelsBrush(QBrush(QColor("white")))
+            # chart.addAxis(axisX, Qt.AlignmentFlag.AlignBottom)
+            # series.attachAxis(axisX)
+            #
+            # axisY = QValueAxis()
+            # axisY.setRange(0, 8)
+            # axisY.setGridLineVisible(False)
+            # axisY.setLabelsBrush(QBrush(QColor("white")))
+            # chart.addAxis(axisY, Qt.AlignmentFlag.AlignLeft)
+            # series.attachAxis(axisY)
+
+            self.ui.weekButt.clicked.connect(self.weekButtClicked)
+            self.ui.monthButt.clicked.connect(self.monthButtClicked)
+
+            self.weekChartView = self.createChart(chartType=chartRange.WEEK, appName=appName)
+            self.monthChartView = self.createChart(chartType=chartRange.MONTH, appName=appName)
+            self.chartSwitcher = QStackedWidget()
+            self.chartSwitcher.addWidget(self.weekChartView)
+            self.chartSwitcher.addWidget(self.monthChartView)
+            self.chartSwitcher.setCurrentWidget(self.weekChartView)
+            self.ui.verticalLayout_2.addWidget(self.chartSwitcher)
+
+            #modify the table attributes
+            self.ui.tableWidget.setColumnWidth(0, 1200)
+            header = self.ui.tableWidget.horizontalHeader()
+            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+            header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+
+            #Connect the Dashboard button
+            self.ui.dashboardButton.clicked.connect(self.dashboardClicked)
+
+    def monthButtClicked(self):
+        self.chartSwitcher.setCurrentWidget(self.monthChartView)
+
+    def weekButtClicked(self):
+        self.chartSwitcher.setCurrentWidget(self.weekChartView)
+
+    def dashboardClicked(self):
+        win.setCurrentWidget(dashboard)
+
+    def createChart(self, appName: str, chartType: chartRange) -> QChartView:
+        categories = []
+        uptimes = []
+
+        if chartType == chartRange.WEEK:
+            startDate = dt.date.today()
+            while (startDate.strftime("%A") != "Sunday"):
+                startDate = startDate + dt.timedelta(days=-1)
+
+            # end date is 6 days after it, making it the next saturday
+            endDate = startDate + dt.timedelta(days=6)
+            currentDate = startDate
+            requiredDates = []
+            # This loop puts in all the days for the given week into the categories array
+            while currentDate != endDate:
+                categories.append(currentDate.strftime("%A"))
+                requiredDates.append(currentDate)
+                currentDate = currentDate + dt.timedelta(days=1)
+
+            categories.append(currentDate.strftime("%A"))
+            requiredDates.append(currentDate)
+
+            frame = db.appDict[appName].frame
+
+            for date in requiredDates:
+                indices = frame.index[frame["Date"] == date].tolist()
+                if indices:
+                    currUptime = frame.loc[indices[-1], "Uptime"]
+                    seconds = dt.timedelta(hours=currUptime.hour, minutes=currUptime.minute,
+                                           seconds=currUptime.second).total_seconds()
+                    uptimes.append(seconds)
+                else:
+                    uptimes.append(0)
+
+        elif chartType == chartRange.MONTH:
+            todayDate = dt.date.today()
+            curMonth = todayDate.month
+            curYear = todayDate.year
+
+            requiredMonthStarts = []
+            requiredMonthStarts.append(dt.date(curYear, curMonth, 1))
+            categories.append(f"{curMonth}/{curYear}")
+            curMonth -= 1
+
+            while curMonth != todayDate.month:
+                if curMonth == 0:
+                    curMonth = 12
+                    curYear = curYear - 1
+                    requiredMonthStarts.append(dt.date(curYear, curMonth, 1))
+                    categories.append(f"{curMonth}/{curYear}")
+                else:
+                    requiredMonthStarts.append(dt.date(curYear, curMonth, 1))
+                    categories.append(f"{curMonth}/{curYear}")
+
+                curMonth -= 1
+
+            categories.reverse()
+            requiredMonthStarts.reverse()
+
+            frame = db.appDict[appName].frame
+
+            curIndex = len(frame) - 1
+            for reqMonths in requiredMonthStarts:
+                uptime = 0
+                while frame.loc[curIndex, "Date"].month == reqMonths.month:
+                    currUptime = frame.loc[curIndex, "Uptime"]
+                    seconds = dt.timedelta(hours=currUptime.hour, minutes=currUptime.minute,
+                                           seconds=currUptime.second).total_seconds()
+                    uptime += seconds
+
+                    if curIndex == 0:
+                        break
+
+                    curIndex -= 1
+
+                uptimes.append(uptime)
+
+        barset = QBarSet(appName)
+        for uptime in uptimes:
+            barset << uptime
 
         series = QBarSeries()
-        series.append(set0)
+        series.append(barset)
 
         chart = QChart()
         chart.addSeries(series)
         chart.setTitle("Application History")
         chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
         chart.setBackgroundBrush(QBrush(QColor("#2F2E34")))
+        chart.setBackgroundVisible(True)
         chart.legend().setLabelBrush(QBrush(QColor("white")))
         chart.setTitleBrush(QBrush(QColor("white")))
 
-        categories = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh"]
         axisX = QBarCategoryAxis()
         axisX.append(categories)
         axisX.setGridLineVisible(False)
@@ -312,26 +458,13 @@ class AppDialogWidget(QWidget):
         series.attachAxis(axisX)
 
         axisY = QValueAxis()
-        axisY.setRange(0, 8)
         axisY.setGridLineVisible(False)
         axisY.setLabelsBrush(QBrush(QColor("white")))
         chart.addAxis(axisY, Qt.AlignmentFlag.AlignLeft)
         series.attachAxis(axisY)
 
-        chartview = QChartView(chart)
-        self.ui.verticalLayout_2.addWidget(chartview)
-
-        #modify the table attributes
-        self.ui.tableWidget.setColumnWidth(0, 1200)
-        header = self.ui.tableWidget.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-
-        #Connect the Dashboard button
-        self.ui.dashboardButton.clicked.connect(self.dashboardClicked)
-
-    def dashboardClicked(self):
-        win.setCurrentWidget(dashboard)
+        chartView = QChartView(chart)
+        return chartView
 
 
 def daemonThread(DB: Database.DB):
@@ -417,7 +550,7 @@ if __name__ == "__main__":
 
     win = QStackedWidget()
     dashboard = DashboardWidget()
-    appDialog = AppDialogWidget()
+    appDialog = AppDialogWidget(appName=None)
     win.addWidget(dashboard)
     win.addWidget(appDialog)
     win.resize(1400, 900)
