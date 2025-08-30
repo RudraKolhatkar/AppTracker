@@ -4,21 +4,20 @@ import subprocess
 import threading
 import time
 import pickle
+import cryptography as cryp
 from typing import List
 from enum import Enum
 
 from PySide6.QtGui import QBrush, QColor, QPen, QAction, QIcon
 from PySide6.QtCore import Qt
 from PySide6.QtCharts import QChart, QChartView, QBarSet, QStackedBarSeries, QBarCategoryAxis, QValueAxis, QBarSeries
-from PySide6.QtWidgets import QApplication, QMainWindow, QSplitter, QStackedWidget, QWidget, QHeaderView, QDialog, \
+from PySide6.QtWidgets import QApplication, QSplitter, QStackedWidget, QWidget, QHeaderView, QDialog, \
     QListWidgetItem, QMessageBox, QSystemTrayIcon, QMenu, QTableWidgetItem
-from pandas.io.formats.info import series_see_also_sub
 
 import Dashboard
 import AppDialog
 import Database
 import AddAppDialog
-from Database import AppInfo
 
 mutex = threading.Lock()
 
@@ -297,37 +296,6 @@ class AppDialogWidget(QWidget):
 
             self.ui.verticalLayout.addWidget(splitter)
 
-            # #Create and Modify the BarChart
-            # #This will be the name of the Application and the data of each day in the week
-            # set0 = QBarSet("Label 1")
-            # set0 << 1 << 2 << 3 << 4 << 5 << 6 << 7
-            #
-            # series = QBarSeries()
-            # series.append(set0)
-            #
-            # chart = QChart()
-            # chart.addSeries(series)
-            # chart.setTitle("Application History")
-            # chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
-            # chart.setBackgroundBrush(QBrush(QColor("#2F2E34")))
-            # chart.legend().setLabelBrush(QBrush(QColor("white")))
-            # chart.setTitleBrush(QBrush(QColor("white")))
-            #
-            # categories = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh"]
-            # axisX = QBarCategoryAxis()
-            # axisX.append(categories)
-            # axisX.setGridLineVisible(False)
-            # axisX.setLabelsBrush(QBrush(QColor("white")))
-            # chart.addAxis(axisX, Qt.AlignmentFlag.AlignBottom)
-            # series.attachAxis(axisX)
-            #
-            # axisY = QValueAxis()
-            # axisY.setRange(0, 8)
-            # axisY.setGridLineVisible(False)
-            # axisY.setLabelsBrush(QBrush(QColor("white")))
-            # chart.addAxis(axisY, Qt.AlignmentFlag.AlignLeft)
-            # series.attachAxis(axisY)
-
             self.ui.weekButt.clicked.connect(self.weekButtClicked)
             self.ui.monthButt.clicked.connect(self.monthButtClicked)
 
@@ -467,17 +435,17 @@ class AppDialogWidget(QWidget):
         return chartView
 
 
+#Cryptography also updates things here
 def daemonThread(DB: Database.DB):
     while True:
         for name in DB.appDict.keys():
             found = True
             try:
-                terminalOutput = subprocess.check_output(f'pgrep -l {name}', shell=True, stderr=subprocess.STDOUT).decode(
-                    'utf-8')
+                subprocess.check_output(f'pgrep -l {name}', shell=True, stderr=subprocess.STDOUT).decode('utf-8')
             except:
                 found = False
 
-            if found == True:
+            if found:
                 value = DB.appDict[name]
 
                 with mutex:
@@ -514,9 +482,7 @@ def on_systrayDoubleClick(reason):
         win.close()
         win = QStackedWidget()
         dashboard = DashboardWidget()
-        appDialog = AppDialogWidget()
         win.addWidget(dashboard)
-        win.addWidget(appDialog)
         win.resize(1400, 900)
         win.setStyleSheet("background-color: rgb(47, 46, 52);")
         win.show()
@@ -537,6 +503,7 @@ if __name__ == "__main__":
     tray.activated.connect(on_systrayDoubleClick)
 
 
+    #cryptography updates here
     try:
         dbFile = open("DB pickle", "rb")
         db = pickle.load(dbFile)

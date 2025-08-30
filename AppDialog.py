@@ -58,18 +58,11 @@ class Ui_Form(object):
 
         self.horizontalLayout.addItem(self.horizontalSpacer)
 
-        self.yearButt = QPushButton(self.frame_2)
-        self.yearButt.setObjectName(u"yearButt")
+        self.monthButt = QPushButton(self.frame_2)
+        self.monthButt.setObjectName(u"monthButt")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.yearButt.sizePolicy().hasHeightForWidth())
-        self.yearButt.setSizePolicy(sizePolicy2)
-
-        self.horizontalLayout.addWidget(self.yearButt)
-
-        self.monthButt = QPushButton(self.frame_2)
-        self.monthButt.setObjectName(u"monthButt")
         sizePolicy2.setHeightForWidth(self.monthButt.sizePolicy().hasHeightForWidth())
         self.monthButt.setSizePolicy(sizePolicy2)
 
@@ -146,7 +139,6 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
         self.dashboardButton.setText(QCoreApplication.translate("Form", u"Dashboard", None))
-        self.yearButt.setText(QCoreApplication.translate("Form", u"Year", None))
         self.monthButt.setText(QCoreApplication.translate("Form", u"Month", None))
         self.weekButt.setText(QCoreApplication.translate("Form", u"Week", None))
         ___qtablewidgetitem = self.tableWidget.horizontalHeaderItem(0)

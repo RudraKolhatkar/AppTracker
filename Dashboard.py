@@ -61,20 +61,11 @@ class Ui_Form(object):
 
         self.horizontalLayout.addItem(self.horizontalSpacer_3)
 
-        self.yearButt = QPushButton(self.TimeFrame)
-        self.yearButt.setObjectName(u"yearButt")
+        self.monthButt = QPushButton(self.TimeFrame)
+        self.monthButt.setObjectName(u"monthButt")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.yearButt.sizePolicy().hasHeightForWidth())
-        self.yearButt.setSizePolicy(sizePolicy2)
-        self.yearButt.setStyleSheet(u"color: white")
-        self.yearButt.setCheckable(False)
-
-        self.horizontalLayout.addWidget(self.yearButt)
-
-        self.monthButt = QPushButton(self.TimeFrame)
-        self.monthButt.setObjectName(u"monthButt")
         sizePolicy2.setHeightForWidth(self.monthButt.sizePolicy().hasHeightForWidth())
         self.monthButt.setSizePolicy(sizePolicy2)
         self.monthButt.setStyleSheet(u"color: white")
@@ -94,6 +85,10 @@ class Ui_Form(object):
         self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout.addItem(self.horizontalSpacer_2)
+
+        self.horizontalSpacer = QSpacerItem(25, 20, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
 
 
         self.verticalLayout.addWidget(self.TimeFrame)
@@ -146,7 +141,6 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
         self.addButton.setText(QCoreApplication.translate("Form", u"+", None))
-        self.yearButt.setText(QCoreApplication.translate("Form", u"Year", None))
         self.monthButt.setText(QCoreApplication.translate("Form", u"Month", None))
         self.weekButt.setText(QCoreApplication.translate("Form", u"Week", None))
         ___qtablewidgetitem = self.tableWidget.horizontalHeaderItem(0)

@@ -1,7 +1,5 @@
 import datetime
 import pandas as pd
-import cryptography as cryp
-import pickle
 import datetime as dt
 
 class AppInfo:
