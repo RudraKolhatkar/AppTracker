@@ -257,12 +257,13 @@ class DashboardWidget(QWidget):
     def barsetClicked(self, index, barset: QBarSet):
         global appDialog
 
-        if win.indexOf(appDialog) != -1:
-            win.removeWidget(appDialog)
-
-        appDialog = AppDialogWidget(barset.label())
-        win.addWidget(appDialog)
-        win.setCurrentWidget(appDialog)
+        try:
+            if win.indexOf(appDialog) != -1:
+                win.removeWidget(appDialog)
+        finally:
+            appDialog = AppDialogWidget(barset.label())
+            win.addWidget(appDialog)
+            win.setCurrentWidget(appDialog)
 
 
     def barsetOnHover(self, status: bool, index: int, barset: QBarSet):
